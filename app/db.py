@@ -12,6 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.orm import DeclarativeBase, relationship
 from datetime import datetime
 
+#these are used for saving users
+from fastapi_users.db import SQLAlchemyUserDatabase, SQLAlchemyBaseUserTableUUID
+from fastapi import Depends
+
+
 #it allows us to connect to a local database file on our computer called test.db
 #we can change it if we want to work with a different database
 DATABASE_URL = 'sqlite+aiosqlite:///./test.db'
@@ -21,16 +26,25 @@ DATABASE_URL = 'sqlite+aiosqlite:///./test.db'
 class Base(DeclarativeBase):
     pass
 
+class User(SQLAlchemyBaseUserTableUUID, Base):
+    __tablename__ = "users"
+    posts = relationship("Post", back_populates="user")
+
 #by using DeclerativeBase, it knows that we are making this a data model
 #we generate a new id each time we insert sth new in our database
 class Post(Base):
     __tablename__ = "posts"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    #foreign key is the refrence to another table
+    #it's one to many relationship. each user can have many posts. so we add the foreign key in posts
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     caption = Column(Text)
     url = Column(String, nullable=False) #it has to have a value
     file_type = Column(String, nullable=False)
     file_name = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="posts")
 
 #now we actually create our database
 engine = create_async_engine(DATABASE_URL)
@@ -43,3 +57,6 @@ async def create_db_and_tables():
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_sessionmaker() as session:
         yield session
+
+async def get_user_db(session: AsyncSession = Depends(get_async_session)):
+    yield SQLAlchemyUserDatabase(session, User)
