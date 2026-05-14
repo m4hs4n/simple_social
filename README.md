@@ -2,6 +2,8 @@
 
 A simple social media backend built with **FastAPI** — my project for learning async APIs, authentication, file uploads, and database integration.
 
+🚀 **Live API Docs:** https://social-media-api-l836.onrender.com/docs
+
 ---
 
 ## What it does
